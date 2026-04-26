@@ -1619,29 +1619,33 @@ docker compose up -d
 docker compose --profile train up -d
 ```
 
-### 6.3.1 Auto deploy trong container (Watchtower + GHCR)
+### 6.3.1 Auto deploy đơn giản (Git hook trên VPS)
 
-> Cách này phù hợp khi bạn chủ yếu cập nhật giao diện: mỗi lần `git push` lên `main`, GitHub Actions sẽ build & push image lên GHCR; Watchtower trên VPS sẽ tự pull image mới và restart container.
+> Mục tiêu: mỗi lần `git push` lên VPS, VPS tự checkout code mới và chạy `docker compose up -d --build`.
 
-1) Trên GitHub repo, chờ workflow `Build & Push Images (GHCR)` chạy xong để có image `:main`.
-2) Trên VPS, enable Watchtower:
+Giả sử:
+
+- Working dir: `/root/docker/Mosquito-detection`
+- Bare repo nhận push: `/root/git/Mosquito-detection.git`
+
+Trên VPS:
 
 ```bash
-docker compose --profile autodeploy up -d
+mkdir -p /root/git
+git init --bare /root/git/Mosquito-detection.git
+
+mkdir -p /root/docker/Mosquito-detection
+
+# Cài hook post-receive (copy từ repo)
+cp /root/docker/Mosquito-detection/infra/git-hooks/post-receive /root/git/Mosquito-detection.git/hooks/post-receive
+chmod +x /root/git/Mosquito-detection.git/hooks/post-receive
 ```
 
-Nếu repo/package ở GHCR là private, cần login trên VPS một lần:
+Trên máy dev (local), thêm remote và push:
 
 ```bash
-docker login ghcr.io
-```
-
-### 6.3.2 Auto deploy trong container (GitOps polling + docker compose)
-
-> Cách này không cần GHCR, nhưng VPS phải có source repo tại `/opt/mosquito/Mosquito-detection` và đã cấu hình git auth để `git fetch` được.
-
-```bash
-docker compose --profile gitops up -d --build
+git remote add vps root@<VPS_IP>:/root/git/Mosquito-detection.git
+git push vps main
 ```
 
 ### 6.4 Nginx trên host (gợi ý)

@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    build: ./backend
     container_name: ${CONTAINER_PREFIX:-mosquito}-backend
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
@@ -64,8 +64,6 @@ services:
     cpus: ${BACKEND_CPUS:-1.0}
     mem_limit: ${BACKEND_MEM:-1024m}
     pids_limit: 512
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -76,7 +74,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    build: ./backend
     container_name: ${CONTAINER_PREFIX:-mosquito}-worker
     command: python -m app.worker
     environment:
@@ -97,8 +95,6 @@ services:
     cpus: ${WORKER_CPUS:-2.0}
     mem_limit: ${WORKER_MEM:-2048m}
     pids_limit: 1024
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -108,13 +104,14 @@ services:
     profiles: ["train"]
 
   frontend:
-    image: ghcr.io/truongnt/mosquito-detection-frontend:main
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: /api
     container_name: ${CONTAINER_PREFIX:-mosquito}-frontend
     cpus: ${FRONTEND_CPUS:-0.5}
     mem_limit: ${FRONTEND_MEM:-256m}
     pids_limit: 256
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -123,33 +120,6 @@ services:
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
-
-  watchtower:
-    image: containrrr/watchtower:1.7.1
-    container_name: ${CONTAINER_PREFIX:-mosquito}-watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval ${WATCHTOWER_INTERVAL:-30} --cleanup --label-enable
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-    restart: unless-stopped
-    profiles: ["autodeploy"]
-
-  # GitOps-style auto deploy by polling `git fetch` and running `docker compose up`.
-  # Requires the project to exist on the VPS at `/opt/mosquito/Mosquito-detection`
-  # and git auth to be configured there (SSH key / credential helper).
-  gitops:
-    build: ./infra/gitops
-    container_name: ${CONTAINER_PREFIX:-mosquito}-gitops
-    environment:
-      APP_DIR: /opt/mosquito/Mosquito-detection
-      BRANCH: main
-      GITOPS_INTERVAL: ${GITOPS_INTERVAL:-30}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/mosquito/Mosquito-detection:/opt/mosquito/Mosquito-detection
-    restart: unless-stopped
-    profiles: ["gitops"]
 
 volumes:
   db_data:
