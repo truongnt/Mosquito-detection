@@ -1632,6 +1632,11 @@ docker compose up -d --build
 docker compose --profile train up -d --build
 ```
 
+### 6.4 Giới hạn tài nguyên (khuyến nghị nếu VPS chạy nhiều dịch vụ)
+
+- Chỉnh trong `.env` các biến như `BACKEND_CPUS`, `BACKEND_MEM`, `WORKER_CPUS`, `WORKER_MEM`, `DB_MEM`...
+- Log container đã bật rotate qua `LOG_MAX_SIZE` / `LOG_MAX_FILE` để tránh đầy ổ đĩa.
+
 ---
 
 ## 7. Giao diện quản trị (Admin) — Log & Training

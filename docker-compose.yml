@@ -10,10 +10,36 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
+    cpus: ${DB_CPUS:-1.0}
+    mem_limit: ${DB_MEM:-1024m}
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mosquito -d mosquito || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     restart: unless-stopped
 
   redis:
     image: redis:7
+    cpus: ${REDIS_CPUS:-0.25}
+    mem_limit: ${REDIS_MEM:-256m}
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     restart: unless-stopped
 
   backend:
@@ -32,6 +58,14 @@ services:
     depends_on:
       - db
       - redis
+    cpus: ${BACKEND_CPUS:-1.0}
+    mem_limit: ${BACKEND_MEM:-1024m}
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     expose:
       - "8000"
     restart: unless-stopped
@@ -54,6 +88,14 @@ services:
     depends_on:
       - db
       - redis
+    cpus: ${WORKER_CPUS:-2.0}
+    mem_limit: ${WORKER_MEM:-2048m}
+    pids_limit: 1024
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     restart: unless-stopped
     profiles: ["train"]
 
@@ -62,6 +104,14 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE: /api
+    cpus: ${FRONTEND_CPUS:-0.5}
+    mem_limit: ${FRONTEND_MEM:-256m}
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     expose:
       - "80"
     restart: unless-stopped
@@ -77,6 +127,14 @@ services:
     depends_on:
       - frontend
       - backend
+    cpus: ${NGINX_CPUS:-0.25}
+    mem_limit: ${NGINX_MEM:-128m}
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
     restart: unless-stopped
 
 volumes:
