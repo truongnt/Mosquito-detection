@@ -1626,8 +1626,8 @@ Ví dụ server block (proxy `/api` vào backend và `/` vào frontend) đã có
 Copy vào `sites-available` và enable:
 
 ```bash
-sudo cp infra/nginx/host/mosquito-detection.conf /etc/nginx/sites-available/mosquito-detection
-sudo ln -sf /etc/nginx/sites-available/mosquito-detection /etc/nginx/sites-enabled/mosquito-detection
+sudo cp infra/nginx/host/mosquito-detection.conf /etc/nginx/sites-available/ai.ci-pilot.asia
+sudo ln -sf /etc/nginx/sites-available/ai.ci-pilot.asia /etc/nginx/sites-enabled/ai.ci-pilot.asia
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
