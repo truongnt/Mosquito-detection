@@ -135,6 +135,22 @@ services:
     restart: unless-stopped
     profiles: ["autodeploy"]
 
+  # GitOps-style auto deploy by polling `git fetch` and running `docker compose up`.
+  # Requires the project to exist on the VPS at `/opt/mosquito/Mosquito-detection`
+  # and git auth to be configured there (SSH key / credential helper).
+  gitops:
+    build: ./infra/gitops
+    container_name: ${CONTAINER_PREFIX:-mosquito}-gitops
+    environment:
+      APP_DIR: /opt/mosquito/Mosquito-detection
+      BRANCH: main
+      GITOPS_INTERVAL: ${GITOPS_INTERVAL:-30}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/mosquito/Mosquito-detection:/opt/mosquito/Mosquito-detection
+    restart: unless-stopped
+    profiles: ["gitops"]
+
 volumes:
   db_data:
   app_logs:

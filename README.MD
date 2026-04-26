@@ -1636,6 +1636,14 @@ Nếu repo/package ở GHCR là private, cần login trên VPS một lần:
 docker login ghcr.io
 ```
 
+### 6.3.2 Auto deploy trong container (GitOps polling + docker compose)
+
+> Cách này không cần GHCR, nhưng VPS phải có source repo tại `/opt/mosquito/Mosquito-detection` và đã cấu hình git auth để `git fetch` được.
+
+```bash
+docker compose --profile gitops up -d --build
+```
+
 ### 6.4 Nginx trên host (gợi ý)
 
 Ví dụ server block (proxy `/api` vào backend và `/` vào frontend) đã có sẵn tại `infra/nginx/host/mosquito-detection.conf`.
