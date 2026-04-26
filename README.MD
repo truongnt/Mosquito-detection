@@ -86,7 +86,6 @@ mosquito-id/
 │
 ├── docker-compose.yml
 ├── infra/                         # Cấu hình chạy trên VPS (compose/nginx/ssl)
-│   ├── docker-compose.prod.yml
 │   └── nginx/
 │       ├── conf.d/
 │       └── certs/
@@ -1528,7 +1527,7 @@ export default function App() {
 - Docker Engine + Docker Compose plugin (`docker compose`)
 - (Tuỳ chọn) GPU NVIDIA cho training: NVIDIA driver + `nvidia-container-toolkit`
 
-### 6.2 `infra/docker-compose.prod.yml` (gợi ý)
+### 6.2 `docker-compose.yml` (chạy trên VPS)
 
 > Lưu ý: nguyên tắc production là **chỉ mở public Nginx** (80/443). Backend/DB/Redis chạy nội bộ trong network Docker.
 
@@ -1627,10 +1626,10 @@ volumes:
 cp .env.example .env
 
 # 2) Build + chạy (nginx là service duy nhất mở port 80/443 ra ngoài)
-docker compose -f infra/docker-compose.prod.yml up -d --build
+docker compose up -d --build
 
 # 3) (Tuỳ chọn) bật worker training/retrain
-docker compose -f infra/docker-compose.prod.yml --profile train up -d --build
+docker compose --profile train up -d --build
 ```
 
 ---

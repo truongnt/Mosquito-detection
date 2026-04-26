@@ -1,5 +1,5 @@
 version: "3.9"
-name: mosquito-id-dev
+name: mosquito-id
 
 services:
   db:
@@ -7,46 +7,42 @@ services:
     environment:
       POSTGRES_DB: mosquito
       POSTGRES_USER: mosquito
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: unless-stopped
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
     restart: unless-stopped
 
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD:-change_me}@db:5432/mosquito
+      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
       REDIS_URL: redis://redis:6379/0
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-change_me_admin_token}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
       MODEL_PATH: /app/models/saved/best_model.pth
       UPLOAD_DIR: /app/data/uploads
       LOG_DIR: /app/logs
     volumes:
-      - ./ml/models/saved:/app/models/saved
+      - ./ml/models/saved:/app/models/saved:ro
       - ./data/uploads:/app/data/uploads
-      - ./backend/logs:/app/logs
+      - app_logs:/app/logs
     depends_on:
       - db
       - redis
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     restart: unless-stopped
 
   worker:
     build: ./backend
     command: python -m app.worker
     environment:
-      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD:-change_me}@db:5432/mosquito
+      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
       REDIS_URL: redis://redis:6379/0
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-change_me_admin_token}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
       MODEL_DIR: /app/models/saved
       DATA_DIR: /app/data
       LOG_DIR: /app/logs
@@ -54,22 +50,35 @@ services:
       - ./ml:/app/ml
       - ./ml/models/saved:/app/models/saved
       - ./data:/app/data
-      - ./backend/logs:/app/logs
+      - app_logs:/app/logs
     depends_on:
       - db
       - redis
     restart: unless-stopped
+    profiles: ["train"]
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: http://localhost:8000
+        VITE_API_BASE: /api
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27
     ports:
-      - "3000:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
     depends_on:
+      - frontend
       - backend
     restart: unless-stopped
 
 volumes:
   db_data:
+  app_logs:
