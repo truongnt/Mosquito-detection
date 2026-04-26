@@ -1,0 +1,16 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str = "postgresql+psycopg2://mosquito:change_me@db:5432/mosquito"
+    redis_url: str = "redis://redis:6379/0"
+    admin_token: str = "change_me_admin_token"
+
+    model_path: str = "/app/models/saved/best_model.pth"
+    upload_dir: str = "/app/data/uploads"
+    log_dir: str = "/app/logs"
+
+
+settings = Settings()

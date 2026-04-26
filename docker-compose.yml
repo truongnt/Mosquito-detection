@@ -1,0 +1,75 @@
+version: "3.9"
+name: mosquito-id-dev
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: mosquito
+      POSTGRES_USER: mosquito
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD:-change_me}@db:5432/mosquito
+      REDIS_URL: redis://redis:6379/0
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change_me_admin_token}
+      MODEL_PATH: /app/models/saved/best_model.pth
+      UPLOAD_DIR: /app/data/uploads
+      LOG_DIR: /app/logs
+    volumes:
+      - ./ml/models/saved:/app/models/saved
+      - ./data/uploads:/app/data/uploads
+      - ./backend/logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: python -m app.worker
+    environment:
+      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD:-change_me}@db:5432/mosquito
+      REDIS_URL: redis://redis:6379/0
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change_me_admin_token}
+      MODEL_DIR: /app/models/saved
+      DATA_DIR: /app/data
+      LOG_DIR: /app/logs
+    volumes:
+      - ./ml:/app/ml
+      - ./ml/models/saved:/app/models/saved
+      - ./data:/app/data
+      - ./backend/logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: http://localhost:8000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db_data:
