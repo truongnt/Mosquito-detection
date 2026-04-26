@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Auto-deploy on VPS after `git push vps main`.
+#
+# Setup (example):
+# - Bare repo: /root/git/Mosquito-detection.git
+# - Working tree: /root/docker/Mosquito-detection
+#
+# This hook:
+# - checks out branch `main` into the working tree
+# - runs `scripts/deploy.sh`
+
+APP_DIR="${APP_DIR:-/root/docker/Mosquito-detection}"
+BRANCH="${BRANCH:-main}"
+
+mkdir -p "$APP_DIR"
+
+GIT_DIR="$(pwd)"
+git --work-tree="$APP_DIR" --git-dir="$GIT_DIR" checkout -f "$BRANCH"
+
+cd "$APP_DIR"
+bash scripts/deploy.sh
+
