@@ -1612,11 +1612,28 @@ volumes:
 # 1) Clone code + cấu hình biến môi trường
 cp .env.example .env
 
-# 2) Build + chạy (nginx là service duy nhất mở port 80/443 ra ngoài)
-docker compose up -d --build
+# 2) Chạy services (host Nginx proxy vào các port loopback)
+docker compose up -d
 
 # 3) (Tuỳ chọn) bật worker training/retrain
-docker compose --profile train up -d --build
+docker compose --profile train up -d
+```
+
+### 6.3.1 Auto deploy trong container (Watchtower + GHCR)
+
+> Cách này phù hợp khi bạn chủ yếu cập nhật giao diện: mỗi lần `git push` lên `main`, GitHub Actions sẽ build & push image lên GHCR; Watchtower trên VPS sẽ tự pull image mới và restart container.
+
+1) Trên GitHub repo, chờ workflow `Build & Push Images (GHCR)` chạy xong để có image `:main`.
+2) Trên VPS, enable Watchtower:
+
+```bash
+docker compose --profile autodeploy up -d
+```
+
+Nếu repo/package ở GHCR là private, cần login trên VPS một lần:
+
+```bash
+docker login ghcr.io
 ```
 
 ### 6.4 Nginx trên host (gợi ý)
