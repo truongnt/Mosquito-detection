@@ -341,6 +341,13 @@ pre {
   margin-top: 10px;
 }
 
+.miniCard {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
 @media (max-width: 960px) {
   .adminBody {
     grid-template-columns: 1fr;

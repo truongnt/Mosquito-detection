@@ -56,11 +56,12 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       MODEL_PATH: /app/models/saved/best_model.pth
+      DATA_DIR: /app/data
       UPLOAD_DIR: /app/data/uploads
       LOG_DIR: /app/logs
     volumes:
       - ./ml/models/saved:/app/models/saved:ro
-      - ./data/uploads:/app/data/uploads
+      - ./data:/app/data
       - app_logs:/app/logs
     depends_on:
       - db

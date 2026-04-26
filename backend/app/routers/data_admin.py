@@ -1,3 +1,4 @@
+import os
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ from ..database import get_db
 from ..deps import require_admin
 from ..models.admin_job import AdminJobEvent, AdminJobRun
 from ..models.schemas import AdminJobCreate, AdminJobEventOut, AdminJobOut
+from ..services.data_scan import scan_datasets
 from ..worker.jobs_data import download_data_job, preprocess_job
 
 router = APIRouter(prefix="/api/admin/data", tags=["admin-data"], dependencies=[Depends(require_admin)])
@@ -22,6 +24,12 @@ log = logging.getLogger("admin.data")
 def _queue() -> Queue:
     redis_conn = Redis.from_url(settings.redis_url)
     return Queue("admin", connection=redis_conn)
+
+
+@router.get("/status")
+def status():
+    data_dir = os.environ.get("DATA_DIR", "/app/data")
+    return scan_datasets(data_dir)
 
 
 @router.post("/download", response_model=AdminJobOut)
@@ -111,4 +119,3 @@ def get_job_events(job_id: str, db: Session = Depends(get_db), limit: int = 200)
     )
     events = list(reversed(events))
     return [AdminJobEventOut.model_validate(e, from_attributes=True) for e in events]
-

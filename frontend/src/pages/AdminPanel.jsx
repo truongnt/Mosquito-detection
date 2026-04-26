@@ -425,8 +425,16 @@ function Data() {
   const [jobs, setJobs] = useState([])
   const [selected, setSelected] = useState(null)
   const [events, setEvents] = useState([])
+  const [status, setStatus] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState("")
+
+  async function loadStatus() {
+    const resp = await apiFetch("/admin/data/status")
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+    setStatus(data)
+  }
 
   async function loadJobs() {
     const resp = await apiFetch("/admin/data/jobs?limit=50")
@@ -447,6 +455,7 @@ function Data() {
   async function refresh() {
     setErr("")
     try {
+      await loadStatus()
       await loadJobs()
     } catch (e) {
       setErr(String(e?.message || e))
@@ -494,6 +503,22 @@ function Data() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Tải dữ liệu</h3>
         <div className="muted">Dataset hiện hỗ trợ: MosquitoDL (public GitHub).</div>
+        {status ? (
+          <div className="miniCard" style={{ marginTop: 10 }}>
+            <div className="muted">Auto-scan</div>
+            <div className="mono">{status.data_dir}</div>
+            <div className="row" style={{ marginTop: 8, justifyContent: "space-between" }}>
+              <div>
+                <div className="kpiLabel">raw</div>
+                <div className="mono">{status.exists?.raw_dir ? "ok" : "missing"}</div>
+              </div>
+              <div>
+                <div className="kpiLabel">processed</div>
+                <div className="mono">{status.exists?.processed_dir ? "ok" : "missing"}</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <label className="label" style={{ marginTop: 10 }}>
           Dataset
           <select className="select" value={dataset} onChange={(e) => setDataset(e.target.value)}>
@@ -514,6 +539,14 @@ function Data() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Preprocess</h3>
         <div className="muted">Tạo `data/processed/mosquitodl/{train,val,test}/(label)/` (copy file).</div>
+        {status ? (
+          <div className="miniCard" style={{ marginTop: 10 }}>
+            <div className="muted">Datasets found</div>
+            <div className="mono">
+              {(status.datasets || []).map((d) => `${d.name}: raw=${d.raw_image_count}`).join(" | ") || "—"}
+            </div>
+          </div>
+        ) : null}
         <div className="formGrid" style={{ marginTop: 10 }}>
           <label className="label">
             Max / label
