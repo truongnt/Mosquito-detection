@@ -397,6 +397,52 @@ Gợi ý tạo bảng (hoặc collection) tối thiểu:
 
 ---
 
+## 9. Multi-model inference (so sánh nhiều model)
+
+Hệ thống hỗ trợ chọn **1 hoặc nhiều model** để chạy dự đoán và hiển thị kết quả theo từng model.
+
+- Public API:
+  - `GET /api/models` danh sách model đang bật (enabled)
+  - `POST /api/predict_multi` upload nhiều ảnh + chọn nhiều model (FormData: `images` + `models`)
+- Frontend (trang `/`) hỗ trợ:
+  - Upload **nhiều ảnh** (multi-select)
+  - Chọn **nhiều model** để so sánh
+
+### 9.1 Bật thêm model qua Admin Config
+
+Trong Admin → **Cấu hình** bạn có thể set key `models` với cấu trúc:
+
+```json
+{
+  "enabled": ["yolo"],
+  "registry": {
+    "vectech_xception": {
+      "name": "VecTech Xception (paper)",
+      "type": "vectech_xception",
+      "noncommercial_only": true,
+      "license": "CC BY-NC 4.0",
+      "weights_path": "/app/models/external/vectech/<path_to_weights>.pth",
+      "imsize": 299,
+      "labels": ["class0", "class1"]
+    }
+  }
+}
+```
+
+> Lưu ý: model `vectech_xception` là adapter tối thiểu để chạy `.pth` Xception. Bạn phải cung cấp đúng `weights_path` và `labels` khớp với weights.
+
+### 9.2 Tải weights VecTech (tuỳ chọn)
+
+Repo tham khảo: `vectech-dev/novel-species-detection` (license **NonCommercial**).
+
+Có thể chạy script:
+
+```bash
+python scripts/download_vectech_model.py
+```
+
+Script sẽ tải `CNN_model_files.zip` (nếu truy cập được) và liệt kê các file `.pth` để bạn chọn `weights_path`.
+
 ## 8. Feedback Loop & Cải thiện Model
 
 ### Quy trình liên tục

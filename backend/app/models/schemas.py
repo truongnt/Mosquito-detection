@@ -13,6 +13,26 @@ class PredictResponse(BaseModel):
     result: PredictionResult
 
 
+class ModelOut(BaseModel):
+    id: str
+    name: str
+    type: str
+    description: str | None = None
+    license: str | None = None
+    noncommercial_only: bool = False
+
+
+class ModelPredictionOut(BaseModel):
+    model_id: str
+    label: str
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class MultiPredictResponse(BaseModel):
+    request_id: str
+    results: list[ModelPredictionOut]
+
+
 class TrainingRunCreate(BaseModel):
     dataset: str = Field(default="mosquitodl", max_length=64)
     total_epochs: int = Field(default=10, ge=1, le=500)

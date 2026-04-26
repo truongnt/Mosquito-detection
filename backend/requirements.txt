@@ -22,3 +22,4 @@ ultralytics>=8.2.0
 torch
 torchvision
 opencv-python-headless
+pretrainedmodels>=0.7.4

@@ -26,37 +26,63 @@ async function readError(resp) {
 }
 
 export default function Home() {
-  const [file, setFile] = useState(null)
+  const [files, setFiles] = useState([])
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState("")
-  const [previewUrl, setPreviewUrl] = useState("")
+  const [previewUrls, setPreviewUrls] = useState([])
+  const [models, setModels] = useState([])
+  const [selectedModels, setSelectedModels] = useState(["yolo"])
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl("")
+    if (!files.length) {
+      setPreviewUrls([])
       return
     }
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [file])
+    const urls = files.map((f) => URL.createObjectURL(f))
+    setPreviewUrls(urls)
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [files])
 
-  const conf = useMemo(() => confidencePct(result?.result?.confidence), [result])
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const resp = await fetch(`${apiBase()}/models`, { credentials: "include" })
+        if (!resp.ok) return
+        const data = await resp.json()
+        if (Array.isArray(data) && data.length) {
+          setModels(data)
+          const ids = data.map((m) => m.id).filter(Boolean)
+          setSelectedModels((prev) => (prev?.length ? prev.filter((x) => ids.includes(x)) : ["yolo"]))
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const resultsByModel = useMemo(() => {
+    const arr = result?.results
+    if (!Array.isArray(arr)) return []
+    return arr
+  }, [result])
 
   async function onSubmit(e) {
     e.preventDefault()
     setError("")
     setResult(null)
-    if (!file) {
-      setError("Chọn 1 ảnh trước khi gửi.")
+    if (!files.length) {
+      setError("Chọn ít nhất 1 ảnh trước khi gửi.")
       return
     }
     setBusy(true)
     try {
       const form = new FormData()
-      form.append("image", file)
-      const resp = await fetch(`${apiBase()}/predict`, { method: "POST", body: form, credentials: "include" })
+      files.forEach((f) => form.append("images", f))
+      form.append("models", JSON.stringify(selectedModels.length ? selectedModels : ["yolo"]))
+      const resp = await fetch(`${apiBase()}/predict_multi`, { method: "POST", body: form, credentials: "include" })
       if (!resp.ok) throw new Error(await readError(resp))
       const data = await resp.json()
       setResult(data)
@@ -73,7 +99,7 @@ export default function Home() {
         <div className="heroLeft">
           <div className="heroTitle">Mosquito AI</div>
           <div className="heroSub muted">
-            Tải 1 ảnh muỗi, hệ thống sẽ dự đoán loài (classification) và trả về mức độ tin cậy.
+            Tải 1 hoặc nhiều ảnh muỗi, chọn 1 hoặc nhiều model, hệ thống sẽ dự đoán loài (classification) và trả về mức độ tin cậy.
           </div>
           <div className="row" style={{ marginTop: 10, alignItems: "center" }}>
             <Link className="btn" to="/admin/login">
@@ -97,33 +123,64 @@ export default function Home() {
           <div className="muted">Ảnh rõ nét, cắt sát muỗi, nền đơn giản sẽ cho kết quả tốt hơn.</div>
 
           <form onSubmit={onSubmit} style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div className="miniCard">
+              <div style={{ fontWeight: 800 }}>Chọn model</div>
+              <div className="muted">Bạn có thể so sánh kết quả của nhiều model cùng lúc.</div>
+              <div className="row" style={{ marginTop: 10 }}>
+                {(models.length ? models : [{ id: "yolo", name: "YOLO (active)" }]).map((m) => (
+                  <label key={m.id} className="row" style={{ alignItems: "center", gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedModels.includes(m.id)}
+                      onChange={(e) => {
+                        const checked = e.target.checked
+                        setSelectedModels((prev) => {
+                          const set = new Set(prev)
+                          if (checked) set.add(m.id)
+                          else set.delete(m.id)
+                          const next = Array.from(set)
+                          return next.length ? next : ["yolo"]
+                        })
+                      }}
+                    />
+                    <span style={{ fontWeight: 700 }}>{m.name || m.id}</span>
+                    {m.noncommercial_only ? <span className="badge danger">NC</span> : null}
+                  </label>
+                ))}
+              </div>
+              <div className="muted" style={{ marginTop: 8 }}>
+                Selected: <span className="mono">{selectedModels.join(", ")}</span>
+              </div>
+            </div>
+
             <div className="dropZone">
               <div>
                 <div style={{ fontWeight: 800 }}>Chọn ảnh</div>
-                <div className="muted">JPEG/PNG/WebP</div>
+                <div className="muted">JPEG/PNG/WebP (có thể chọn nhiều)</div>
               </div>
               <input
                 className="input"
                 type="file"
                 accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 style={{ flex: "1 1 auto" }}
               />
             </div>
 
             <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <button className="btn primary" disabled={busy || !file}>
+              <button className="btn primary" disabled={busy || !files.length}>
                 {busy ? "Đang nhận dạng..." : "Nhận dạng"}
               </button>
               <button
                 type="button"
                 className="btn"
                 onClick={() => {
-                  setFile(null)
+                  setFiles([])
                   setResult(null)
                   setError("")
                 }}
-                disabled={busy && !file}
+                disabled={busy && !files.length}
               >
                 Reset
               </button>
@@ -132,17 +189,21 @@ export default function Home() {
 
           {error ? <div className="alert danger">{error}</div> : null}
 
-          {previewUrl ? (
+          {previewUrls.length ? (
             <div style={{ marginTop: 12 }}>
-              <div className="muted">Preview</div>
-              <img className="previewImg" src={previewUrl} alt="preview" />
+              <div className="muted">Preview ({previewUrls.length})</div>
+              <div className="previewGrid">
+                {previewUrls.slice(0, 6).map((u, idx) => (
+                  <img key={u} className="previewThumb" src={u} alt={`preview-${idx}`} />
+                ))}
+              </div>
             </div>
           ) : null}
         </div>
 
         <div className="card">
           <h2 style={{ marginTop: 0, marginBottom: 6 }}>Kết quả</h2>
-          <div className="muted">Top-1 label + confidence.</div>
+          <div className="muted">Top-1 label + confidence (theo từng model).</div>
 
           {!result ? (
             <div className="emptyState">
@@ -154,23 +215,37 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="resultBox">
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-                <div>
-                  <div className="kpiLabel">Label</div>
-                  <div className="resultLabel">{result?.result?.label || "—"}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div className="kpiLabel">Confidence</div>
-                  <div className="resultConf">{conf == null ? "—" : `${conf}%`}</div>
-                </div>
-              </div>
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              {resultsByModel.map((r) => {
+                const conf = confidencePct(r?.confidence)
+                return (
+                  <div key={r.model_id} className="resultBox">
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+                      <div>
+                        <div className="kpiLabel">Model</div>
+                        <div className="mono" style={{ fontWeight: 900 }}>
+                          {r.model_id}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div className="kpiLabel">Confidence</div>
+                        <div className="resultConf">{conf == null ? "—" : `${conf}%`}</div>
+                      </div>
+                    </div>
 
-              <div className="bar" style={{ marginTop: 10 }}>
-                <div className="barFill" style={{ width: `${conf || 0}%` }} />
-              </div>
-              <div className="muted" style={{ marginTop: 8 }}>
-                request_id: <span className="mono">{result.request_id}</span>
+                    <div style={{ marginTop: 8 }}>
+                      <div className="kpiLabel">Label</div>
+                      <div className="resultLabel">{r?.label || "—"}</div>
+                    </div>
+
+                    <div className="bar" style={{ marginTop: 10 }}>
+                      <div className="barFill" style={{ width: `${conf || 0}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="muted">
+                request_id: <span className="mono">{result.request_id}</span> • images: <span className="mono">{files.length}</span>
               </div>
             </div>
           )}
