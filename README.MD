@@ -1621,7 +1621,17 @@ docker compose --profile train up -d --build
 
 ### 6.4 Nginx trên host (gợi ý)
 
-Ví dụ server block (proxy `/api` vào backend và `/` vào frontend):
+Ví dụ server block (proxy `/api` vào backend và `/` vào frontend) đã có sẵn tại `infra/nginx/host/mosquito-detection.conf`.
+
+Copy vào `sites-available` và enable:
+
+```bash
+sudo cp infra/nginx/host/mosquito-detection.conf /etc/nginx/sites-available/mosquito-detection
+sudo ln -sf /etc/nginx/sites-available/mosquito-detection /etc/nginx/sites-enabled/mosquito-detection
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Nội dung mẫu:
 
 ```nginx
 server {
