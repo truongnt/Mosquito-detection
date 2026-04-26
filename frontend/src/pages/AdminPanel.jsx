@@ -762,6 +762,12 @@ function Data() {
   useInterval(() => loadEvents(selected).catch(() => {}), 2000)
 
   const current = useMemo(() => jobs.find((j) => j.id === selected) || null, [jobs, selected])
+  const datasets = useMemo(() => {
+    const v = status?.datasets
+    if (Array.isArray(v)) return v
+    if (v && typeof v === "object") return Object.values(v)
+    return []
+  }, [status])
 
   async function start(kind) {
     setErr("")
@@ -836,7 +842,7 @@ function Data() {
           <div className="miniCard" style={{ marginTop: 10 }}>
             <div className="muted">Datasets found</div>
             <div className="mono">
-              {(status.datasets || []).map((d) => `${d.name}: raw=${d.raw_image_count}`).join(" | ") || "—"}
+              {datasets.map((d) => `${d?.name || "?"}: raw=${d?.raw_image_count ?? "?"}`).join(" | ") || "—"}
             </div>
           </div>
         ) : null}

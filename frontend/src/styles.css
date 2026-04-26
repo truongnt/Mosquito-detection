@@ -348,6 +348,84 @@ pre {
   padding: 10px 12px;
 }
 
+.homeShell {
+  display: grid;
+  gap: 14px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 14px;
+  background: radial-gradient(1200px 400px at 20% 0%, #eff6ff 0%, #ffffff 50%, #ffffff 100%);
+}
+
+.heroTitle {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.heroRight {
+  border-left: 1px solid #e2e8f0;
+  padding-left: 14px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.dropZone {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.previewImg {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #0b1220;
+}
+
+.emptyState {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  margin-top: 12px;
+}
+
+.emptyTitle {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.resultBox {
+  margin-top: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+}
+
+.resultLabel {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.resultConf {
+  font-size: 22px;
+  font-weight: 900;
+  color: #1d4ed8;
+}
+
 @media (max-width: 960px) {
   .adminBody {
     grid-template-columns: 1fr;
@@ -363,5 +441,14 @@ pre {
   }
   .eventRow {
     grid-template-columns: 10px 1fr;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .heroRight {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
   }
 }
