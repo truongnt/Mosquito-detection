@@ -5,7 +5,10 @@ export function apiBase() {
   return `${base}/api`
 }
 
-export function adminHeaders() {
-  const token = localStorage.getItem("ADMIN_TOKEN") || ""
-  return token ? { Authorization: `Bearer ${token}` } : {}
+export async function apiFetch(path, options = {}) {
+  const base = apiBase()
+  const url = `${base}${path.startsWith("/") ? "" : "/"}${path}`
+  const headers = { ...(options.headers || {}) }
+  const resp = await fetch(url, { ...options, headers, credentials: "include" })
+  return resp
 }

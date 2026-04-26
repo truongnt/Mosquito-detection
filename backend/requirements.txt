@@ -11,3 +11,6 @@ rq==1.16.2
 
 pydantic==2.9.2
 pydantic-settings==2.5.2
+
+passlib[bcrypt]==1.7.4
+itsdangerous==2.2.0

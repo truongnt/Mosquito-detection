@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from .config import settings
 from .database import Base, engine
 from .logging_config import configure_logging
-from .routers import admin_logs, feedback, predict, reports, training
+from .routers import admin_config, admin_logs, auth, feedback, predict, reports, training
 
 
 def create_app() -> FastAPI:
@@ -14,11 +14,13 @@ def create_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
 
     app = FastAPI(title="Mosquito AI", version="0.1.0")
+    app.include_router(auth.router)
     app.include_router(predict.router)
     app.include_router(reports.router)
     app.include_router(feedback.router)
     app.include_router(training.router)
     app.include_router(admin_logs.router)
+    app.include_router(admin_config.router)
     return app
 
 

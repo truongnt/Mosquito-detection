@@ -1,7 +1,8 @@
 import React from "react"
 import { NavLink, Route, Routes } from "react-router-dom"
 import Home from "./pages/Home.jsx"
-import Admin from "./pages/Admin.jsx"
+import AdminLogin from "./pages/AdminLogin.jsx"
+import AdminPanel from "./pages/AdminPanel.jsx"
 
 export default function App() {
   return (
@@ -17,7 +18,8 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
     </div>
   )

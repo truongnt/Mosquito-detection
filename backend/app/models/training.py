@@ -19,6 +19,7 @@ class TrainingRun(Base):
     current_epoch: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     total_epochs: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    params_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     metrics_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     artifact_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

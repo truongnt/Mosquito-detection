@@ -15,6 +15,9 @@ class PredictResponse(BaseModel):
 
 class TrainingRunCreate(BaseModel):
     total_epochs: int = Field(default=10, ge=1, le=500)
+    learning_rate: float = Field(default=0.001, gt=0.0, le=1.0)
+    batch_size: int = Field(default=32, ge=1, le=4096)
+    note: str | None = Field(default=None, max_length=2000)
 
 
 class TrainingRunOut(BaseModel):
@@ -25,6 +28,7 @@ class TrainingRunOut(BaseModel):
     progress: float
     current_epoch: int
     total_epochs: int
+    params_json: dict | None = None
     metrics_json: dict | None = None
     artifact_path: str | None = None
     error_message: str | None = None

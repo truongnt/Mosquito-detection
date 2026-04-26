@@ -19,7 +19,7 @@ export default function Home() {
     try {
       const form = new FormData()
       form.append("image", file)
-      const resp = await fetch(`${apiBase()}/predict`, { method: "POST", body: form })
+      const resp = await fetch(`${apiBase()}/predict`, { method: "POST", body: form, credentials: "include" })
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const data = await resp.json()
       setResult(data)

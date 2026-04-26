@@ -36,6 +36,11 @@ def create_run(payload: TrainingRunCreate, db: Session = Depends(get_db)):
         progress=0.0,
         current_epoch=0,
         total_epochs=payload.total_epochs,
+        params_json={
+            "learning_rate": payload.learning_rate,
+            "batch_size": payload.batch_size,
+            "note": payload.note,
+        },
     )
     db.add(run)
     db.commit()
