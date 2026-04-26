@@ -126,6 +126,9 @@ export default function AdminPanel() {
           <button className={tab === "overview" ? "navBtn active" : "navBtn"} onClick={() => setTab("overview")}>
             Tổng quan
           </button>
+          <button className={tab === "data" ? "navBtn active" : "navBtn"} onClick={() => setTab("data")}>
+            Dữ liệu
+          </button>
           <button className={tab === "training" ? "navBtn active" : "navBtn"} onClick={() => setTab("training")}>
             Training
           </button>
@@ -139,6 +142,7 @@ export default function AdminPanel() {
 
         <div className="adminMain">
           {tab === "overview" ? <Overview /> : null}
+          {tab === "data" ? <Data /> : null}
           {tab === "training" ? <Training /> : null}
           {tab === "config" ? <Config /> : null}
           {tab === "logs" ? <Logs /> : null}
@@ -411,6 +415,186 @@ function Training() {
   )
 }
 
+function Data() {
+  const [dataset, setDataset] = useState("mosquitodl")
+  const [maxPerLabel, setMaxPerLabel] = useState(500)
+  const [valRatio, setValRatio] = useState(0.1)
+  const [testRatio, setTestRatio] = useState(0.1)
+  const [seed, setSeed] = useState(42)
+
+  const [jobs, setJobs] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [events, setEvents] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState("")
+
+  async function loadJobs() {
+    const resp = await apiFetch("/admin/data/jobs?limit=50")
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+    setJobs(data)
+    if (!selected && data[0]) setSelected(data[0].id)
+  }
+
+  async function loadEvents(jobId) {
+    if (!jobId) return
+    const resp = await apiFetch(`/admin/data/jobs/${jobId}/events?limit=200`)
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+    setEvents(data)
+  }
+
+  async function refresh() {
+    setErr("")
+    try {
+      await loadJobs()
+    } catch (e) {
+      setErr(String(e?.message || e))
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+  }, [])
+  useInterval(() => refresh(), 3000)
+  useInterval(() => loadEvents(selected).catch(() => {}), 2000)
+
+  const current = useMemo(() => jobs.find((j) => j.id === selected) || null, [jobs, selected])
+
+  async function start(kind) {
+    setErr("")
+    setBusy(true)
+    try {
+      const path = kind === "download" ? "/admin/data/download" : "/admin/data/preprocess"
+      const resp = await apiFetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset,
+          max_per_label: Number(maxPerLabel) || 500,
+          val_ratio: Number(valRatio) || 0.1,
+          test_ratio: Number(testRatio) || 0.1,
+          seed: Number(seed) || 42,
+        }),
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(text || `HTTP ${resp.status}`)
+      }
+      await refresh()
+    } catch (e) {
+      setErr(String(e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="grid2">
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Tải dữ liệu</h3>
+        <div className="muted">Dataset hiện hỗ trợ: MosquitoDL (public GitHub).</div>
+        <label className="label" style={{ marginTop: 10 }}>
+          Dataset
+          <select className="select" value={dataset} onChange={(e) => setDataset(e.target.value)}>
+            <option value="mosquitodl">mosquitodl</option>
+          </select>
+        </label>
+        {err ? <div className="alert danger">{err}</div> : null}
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn primary" disabled={busy} onClick={() => start("download")}>
+            {busy ? "Đang chạy..." : "Download"}
+          </button>
+          <button className="btn" onClick={refresh}>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Preprocess</h3>
+        <div className="muted">Tạo `data/processed/mosquitodl/{train,val,test}/(label)/` (copy file).</div>
+        <div className="formGrid" style={{ marginTop: 10 }}>
+          <label className="label">
+            Max / label
+            <input className="input" type="number" min={1} value={maxPerLabel} onChange={(e) => setMaxPerLabel(e.target.value)} />
+          </label>
+          <label className="label">
+            Seed
+            <input className="input" type="number" min={0} value={seed} onChange={(e) => setSeed(e.target.value)} />
+          </label>
+          <label className="label">
+            Val ratio
+            <input className="input" type="number" step="0.01" min={0} max={0.5} value={valRatio} onChange={(e) => setValRatio(e.target.value)} />
+          </label>
+          <label className="label">
+            Test ratio
+            <input className="input" type="number" step="0.01" min={0} max={0.5} value={testRatio} onChange={(e) => setTestRatio(e.target.value)} />
+          </label>
+        </div>
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn primary" disabled={busy} onClick={() => start("preprocess")}>
+            {busy ? "Đang chạy..." : "Preprocess"}
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ gridColumn: "1 / -1" }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0 }}>Jobs</h3>
+          <div className="row" style={{ alignItems: "center" }}>
+            <select className="select" value={selected || ""} onChange={(e) => setSelected(e.target.value)}>
+              {jobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.kind} {j.id}
+                </option>
+              ))}
+            </select>
+            <button className="btn" onClick={() => loadEvents(selected).catch(() => {})}>
+              Load events
+            </button>
+          </div>
+        </div>
+
+        {current ? (
+          <div style={{ marginTop: 12 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div className="mono">{current.id}</div>
+                <div className="muted">{current.kind}</div>
+                <span className={`badge ${statusColor(current.status)}`}>{current.status}</span>
+              </div>
+              <ProgressRing value={current.progress} />
+            </div>
+            <div style={{ marginTop: 10 }} className="bar">
+              <div className="barFill" style={{ width: `${current.progress}%` }} />
+            </div>
+            {current.error_message ? <div className="alert danger">{current.error_message}</div> : null}
+            {current.result_json ? (
+              <pre style={{ marginTop: 12, maxHeight: 260 }}>{JSON.stringify(current.result_json, null, 2)}</pre>
+            ) : null}
+          </div>
+        ) : (
+          <div className="muted" style={{ marginTop: 12 }}>
+            Chưa có job.
+          </div>
+        )}
+
+        <div className="events" style={{ marginTop: 12 }}>
+          {events.map((e) => (
+            <div key={e.id} className="eventRow">
+              <span className={`dot ${e.level === "ERROR" ? "danger" : "info"}`} />
+              <span className="mono">{new Date(e.ts).toLocaleString()}</span>
+              <span className="mono">{e.level}</span>
+              <span>{e.message}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Config() {
   const [cfg, setCfg] = useState({})
   const [draft, setDraft] = useState({})
@@ -552,4 +736,3 @@ function Logs() {
     </div>
   )
 }
-

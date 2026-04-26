@@ -12,7 +12,7 @@ def main() -> None:
     logging.getLogger("worker").info("starting worker redis_url=%s", settings.redis_url)
     redis_conn = Redis.from_url(settings.redis_url)
     with Connection(redis_conn):
-        queues = [Queue("training")]
+        queues = [Queue("training"), Queue("admin")]
         worker = Worker(queues)
         worker.work(with_scheduler=True)
 
