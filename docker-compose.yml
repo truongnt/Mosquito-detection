@@ -69,8 +69,8 @@ services:
       options:
         max-size: ${LOG_MAX_SIZE:-10m}
         max-file: ${LOG_MAX_FILE:-5}
-    expose:
-      - "8000"
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     restart: unless-stopped
 
   worker:
@@ -117,30 +117,8 @@ services:
       options:
         max-size: ${LOG_MAX_SIZE:-10m}
         max-file: ${LOG_MAX_FILE:-5}
-    expose:
-      - "80"
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:1.27
-    container_name: ${CONTAINER_PREFIX:-mosquito}-nginx
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./infra/nginx/certs:/etc/nginx/certs:ro
-    depends_on:
-      - frontend
-      - backend
-    cpus: ${NGINX_CPUS:-0.25}
-    mem_limit: ${NGINX_MEM:-128m}
-    pids_limit: 256
-    logging:
-      driver: json-file
-      options:
-        max-size: ${LOG_MAX_SIZE:-10m}
-        max-file: ${LOG_MAX_FILE:-5}
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
 
 volumes:

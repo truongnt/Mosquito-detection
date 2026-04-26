@@ -1526,10 +1526,11 @@ export default function App() {
 
 - Docker Engine + Docker Compose plugin (`docker compose`)
 - (Tuỳ chọn) GPU NVIDIA cho training: NVIDIA driver + `nvidia-container-toolkit`
+- VPS đã có Nginx (host) để reverse proxy (không dùng Nginx container)
 
 ### 6.2 `docker-compose.yml` (chạy trên VPS)
 
-> Lưu ý: nguyên tắc production là **chỉ mở public Nginx** (80/443). Backend/DB/Redis chạy nội bộ trong network Docker.
+> Lưu ý: chỉ publish `backend` và `frontend` ra **loopback** (`127.0.0.1`) để **host Nginx** proxy vào.
 
 ```yaml
 version: "3.9"
@@ -1565,8 +1566,8 @@ services:
     depends_on:
       - db
       - redis
-    expose:
-      - "8000"
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     restart: unless-stopped
 
   # Worker xử lý job dài (training/retrain/export) và cập nhật progress để UI quản trị theo dõi.
@@ -1596,22 +1597,8 @@ services:
     build: ./frontend
     depends_on:
       - backend
-    expose:
-      - "80"
-    restart: unless-stopped
-
-  # Reverse proxy duy nhất public ra Internet (HTTPS, routing /api -> backend).
-  nginx:
-    image: nginx:1.27
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./infra/nginx/certs:/etc/nginx/certs:ro
-    depends_on:
-      - frontend
-      - backend
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
 
 volumes:
@@ -1630,6 +1617,32 @@ docker compose up -d --build
 
 # 3) (Tuỳ chọn) bật worker training/retrain
 docker compose --profile train up -d --build
+```
+
+### 6.4 Nginx trên host (gợi ý)
+
+Ví dụ server block (proxy `/api` vào backend và `/` vào frontend):
+
+```nginx
+server {
+  listen 80;
+  server_name _;
+
+  client_max_body_size 25m;
+
+  location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+  }
+}
 ```
 
 ### 6.4 Giới hạn tài nguyên (khuyến nghị nếu VPS chạy nhiều dịch vụ)
