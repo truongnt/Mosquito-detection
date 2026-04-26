@@ -1552,7 +1552,7 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    image: ghcr.io/truongnt/mosquito-detection-backend:main
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
       REDIS_URL: redis://redis:6379/0
@@ -1573,7 +1573,7 @@ services:
   # Worker xử lý job dài (training/retrain/export) và cập nhật progress để UI quản trị theo dõi.
   # Bật bằng: `docker compose --profile train up -d`.
   worker:
-    build: ./backend
+    image: ghcr.io/truongnt/mosquito-detection-backend:main
     command: python -m app.worker
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
@@ -1594,12 +1594,21 @@ services:
 
   # Frontend build ra static và serve bằng Nginx (khuyến nghị cho production).
   frontend:
-    build: ./frontend
+    image: ghcr.io/truongnt/mosquito-detection-frontend:main
     depends_on:
       - backend
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
+
+  # Auto update containers when GHCR image :main changes
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval ${WATCHTOWER_INTERVAL:-30} --cleanup --label-enable
+    restart: unless-stopped
+    profiles: ["autodeploy"]
 
 volumes:
   db_data:
@@ -1613,39 +1622,28 @@ volumes:
 cp .env.example .env
 
 # 2) Chạy services (host Nginx proxy vào các port loopback)
+docker compose pull
 docker compose up -d
 
 # 3) (Tuỳ chọn) bật worker training/retrain
 docker compose --profile train up -d
 ```
 
-### 6.3.1 Auto deploy đơn giản (Git hook trên VPS)
+### 6.3.1 Auto deploy (GHCR + Watchtower)
 
-> Mục tiêu: mỗi lần `git push` lên VPS, VPS tự checkout code mới và chạy `docker compose up -d --build`.
+> Luồng: `git push` → GitHub Actions build & push image lên GHCR → Watchtower trên VPS tự pull image mới và restart container.
 
-Giả sử:
-
-- Working dir: `/root/docker/Mosquito-detection`
-- Bare repo nhận push: `/root/git/Mosquito-detection.git`
-
-Trên VPS:
+1) Trên GitHub repo, chờ workflow `Build & Push Images (GHCR)` chạy xong.
+2) Trên VPS, enable Watchtower:
 
 ```bash
-mkdir -p /root/git
-git init --bare /root/git/Mosquito-detection.git
-
-mkdir -p /root/docker/Mosquito-detection
-
-# Cài hook post-receive (copy từ repo)
-cp /root/docker/Mosquito-detection/infra/git-hooks/post-receive /root/git/Mosquito-detection.git/hooks/post-receive
-chmod +x /root/git/Mosquito-detection.git/hooks/post-receive
+docker compose --profile autodeploy up -d
 ```
 
-Trên máy dev (local), thêm remote và push:
+Nếu image/package ở GHCR là private, cần login trên VPS một lần (PAT có `read:packages`):
 
 ```bash
-git remote add vps root@<VPS_IP>:/root/git/Mosquito-detection.git
-git push vps main
+docker login ghcr.io
 ```
 
 ### 6.4 Nginx trên host (gợi ý)
