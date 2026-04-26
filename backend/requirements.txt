@@ -15,3 +15,10 @@ pydantic-settings==2.5.2
 passlib==1.7.4
 bcrypt==3.2.2
 itsdangerous==2.2.0
+
+# ML (CPU-only). Used for YOLO classification training/inference.
+# Keep versions flexible to avoid pip/ABI issues across environments.
+ultralytics>=8.2.0
+torch
+torchvision
+opencv-python-headless

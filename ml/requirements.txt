@@ -1,1 +1,5 @@
-# ML dependencies will be added when training code is integrated.
+# ML dependencies (CPU-only by default).
+ultralytics>=8.2.0
+torch
+torchvision
+opencv-python-headless

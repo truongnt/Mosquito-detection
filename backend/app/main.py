@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from .config import settings
 from .database import Base, engine
 from .logging_config import configure_logging
-from .routers import admin_config, admin_logs, auth, data_admin, feedback, predict, reports, training
+from .routers import admin_config, admin_feedback, admin_logs, admin_models, auth, data_admin, feedback, predict, reports, training
 
 
 def create_app() -> FastAPI:
@@ -22,6 +22,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_logs.router)
     app.include_router(admin_config.router)
     app.include_router(data_admin.router)
+    app.include_router(admin_feedback.router)
+    app.include_router(admin_models.router)
     return app
 
 

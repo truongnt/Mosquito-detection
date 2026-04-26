@@ -56,6 +56,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       MODEL_PATH: /app/models/saved/best_model.pth
+      MODEL_DIR: /app/models/saved
       DATA_DIR: /app/data
       UPLOAD_DIR: /app/data/uploads
       LOG_DIR: /app/logs
@@ -87,6 +88,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
       REDIS_URL: redis://redis:6379/0
+      QUEUES: admin
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       ALLOW_ADMIN_TOKEN: ${ALLOW_ADMIN_TOKEN:-true}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
@@ -106,6 +108,43 @@ services:
       - redis
     cpus: ${WORKER_CPUS:-2.0}
     mem_limit: ${WORKER_MEM:-2048m}
+    pids_limit: 1024
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILE:-5}
+    restart: unless-stopped
+
+  trainer:
+    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    container_name: ${CONTAINER_PREFIX:-mosquito}-trainer
+    command: python -m app.worker
+    environment:
+      DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
+      REDIS_URL: redis://redis:6379/0
+      QUEUES: training
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      ALLOW_ADMIN_TOKEN: ${ALLOW_ADMIN_TOKEN:-true}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      MODEL_DIR: /app/models/saved
+      DATA_DIR: /app/data
+      LOG_DIR: /app/logs
+    volumes:
+      - ./ml:/app/ml
+      - ./ml/models/saved:/app/models/saved
+      - ./data:/app/data
+      - app_logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    cpus: ${TRAINER_CPUS:-2.0}
+    mem_limit: ${TRAINER_MEM:-2048m}
     pids_limit: 1024
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

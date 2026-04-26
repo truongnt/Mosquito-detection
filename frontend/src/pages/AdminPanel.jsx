@@ -132,6 +132,9 @@ export default function AdminPanel() {
           <button className={tab === "training" ? "navBtn active" : "navBtn"} onClick={() => setTab("training")}>
             Training
           </button>
+          <button className={tab === "models" ? "navBtn active" : "navBtn"} onClick={() => setTab("models")}>
+            Models
+          </button>
           <button className={tab === "config" ? "navBtn active" : "navBtn"} onClick={() => setTab("config")}>
             Cấu hình
           </button>
@@ -144,12 +147,22 @@ export default function AdminPanel() {
           {tab === "overview" ? <Overview /> : null}
           {tab === "data" ? <Data /> : null}
           {tab === "training" ? <Training /> : null}
+          {tab === "models" ? <Models /> : null}
           {tab === "config" ? <Config /> : null}
           {tab === "logs" ? <Logs /> : null}
         </div>
       </div>
     </div>
   )
+}
+
+function bytes(n) {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return "—"
+  if (v < 1024) return `${v} B`
+  if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`
+  if (v < 1024 * 1024 * 1024) return `${(v / (1024 * 1024)).toFixed(1)} MB`
+  return `${(v / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
 function Overview() {
@@ -242,10 +255,28 @@ function Overview() {
 function Training() {
   const [runs, setRuns] = useState([])
   const [selected, setSelected] = useState(null)
+  const [dataset, setDataset] = useState("mosquitodl")
   const [epochs, setEpochs] = useState(10)
+  const [imgSize, setImgSize] = useState(224)
   const [lr, setLr] = useState(0.001)
   const [bs, setBs] = useState(32)
+  const [baseModel, setBaseModel] = useState("yolo26n-cls.pt")
   const [note, setNote] = useState("")
+  const [augEnabled, setAugEnabled] = useState(true)
+  const [augHsvH, setAugHsvH] = useState(0.015)
+  const [augHsvS, setAugHsvS] = useState(0.7)
+  const [augHsvV, setAugHsvV] = useState(0.4)
+  const [augDegrees, setAugDegrees] = useState(10)
+  const [augTranslate, setAugTranslate] = useState(0.1)
+  const [augScale, setAugScale] = useState(0.5)
+  const [augShear, setAugShear] = useState(2)
+  const [augPerspective, setAugPerspective] = useState(0)
+  const [augFlipLR, setAugFlipLR] = useState(0.5)
+  const [augFlipUD, setAugFlipUD] = useState(0)
+  const [augMosaic, setAugMosaic] = useState(0.8)
+  const [augMixup, setAugMixup] = useState(0)
+  const [augCopyPaste, setAugCopyPaste] = useState(0)
+  const [augErasing, setAugErasing] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState("")
   const [events, setEvents] = useState([])
@@ -294,9 +325,27 @@ function Training() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          dataset: dataset || "mosquitodl",
           total_epochs: Number(epochs) || 10,
+          img_size: Number(imgSize) || 224,
           learning_rate: Number(lr) || 0.001,
           batch_size: Number(bs) || 32,
+          base_model: baseModel || "yolo26n-cls.pt",
+          augment_enabled: Boolean(augEnabled),
+          aug_hsv_h: Number(augHsvH) || 0,
+          aug_hsv_s: Number(augHsvS) || 0,
+          aug_hsv_v: Number(augHsvV) || 0,
+          aug_degrees: Number(augDegrees) || 0,
+          aug_translate: Number(augTranslate) || 0,
+          aug_scale: Number(augScale) || 0,
+          aug_shear: Number(augShear) || 0,
+          aug_perspective: Number(augPerspective) || 0,
+          aug_flip_lr: Number(augFlipLR) || 0,
+          aug_flip_ud: Number(augFlipUD) || 0,
+          aug_mosaic: Number(augMosaic) || 0,
+          aug_mixup: Number(augMixup) || 0,
+          aug_copy_paste: Number(augCopyPaste) || 0,
+          aug_erasing: Number(augErasing) || 0,
           note: note || null,
         }),
       })
@@ -318,8 +367,16 @@ function Training() {
         <h3 style={{ marginTop: 0 }}>Tạo retrain</h3>
         <div className="formGrid">
           <label className="label">
+            Dataset
+            <input className="input" value={dataset} onChange={(e) => setDataset(e.target.value)} placeholder="mosquitodl" />
+          </label>
+          <label className="label">
             Epochs
             <input className="input" type="number" min={1} max={500} value={epochs} onChange={(e) => setEpochs(e.target.value)} />
+          </label>
+          <label className="label">
+            Image size
+            <input className="input" type="number" min={64} max={2048} value={imgSize} onChange={(e) => setImgSize(e.target.value)} />
           </label>
           <label className="label">
             Learning rate
@@ -330,9 +387,90 @@ function Training() {
             <input className="input" type="number" min={1} max={4096} value={bs} onChange={(e) => setBs(e.target.value)} />
           </label>
           <label className="label" style={{ gridColumn: "1 / -1" }}>
+            Base model
+            <input className="input" value={baseModel} onChange={(e) => setBaseModel(e.target.value)} placeholder="yolo26n-cls.pt" />
+          </label>
+          <label className="label" style={{ gridColumn: "1 / -1" }}>
             Ghi chú
             <textarea className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
+
+          <div className="miniCard" style={{ gridColumn: "1 / -1" }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>Augmentation</div>
+                <div className="muted">Các tham số này sẽ dùng khi kết nối train YOLO thật.</div>
+              </div>
+              <label className="row" style={{ gap: 8, alignItems: "center" }}>
+                <input type="checkbox" checked={augEnabled} onChange={(e) => setAugEnabled(e.target.checked)} />
+                <span className="muted">Bật</span>
+              </label>
+            </div>
+
+            <div className="formGrid" style={{ marginTop: 10, opacity: augEnabled ? 1 : 0.6 }}>
+              <label className="label">
+                Mosaic (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augMosaic} onChange={(e) => setAugMosaic(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                MixUp (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augMixup} onChange={(e) => setAugMixup(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Flip LR (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augFlipLR} onChange={(e) => setAugFlipLR(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Flip UD (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augFlipUD} onChange={(e) => setAugFlipUD(e.target.value)} disabled={!augEnabled} />
+              </label>
+
+              <label className="label">
+                Degrees (0..90)
+                <input className="input" type="number" step="1" min={0} max={90} value={augDegrees} onChange={(e) => setAugDegrees(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Translate (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augTranslate} onChange={(e) => setAugTranslate(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Scale (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augScale} onChange={(e) => setAugScale(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Shear (0..10)
+                <input className="input" type="number" step="0.5" min={0} max={10} value={augShear} onChange={(e) => setAugShear(e.target.value)} disabled={!augEnabled} />
+              </label>
+
+              <label className="label">
+                HSV H (0..0.1)
+                <input className="input" type="number" step="0.005" min={0} max={0.1} value={augHsvH} onChange={(e) => setAugHsvH(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                HSV S (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augHsvS} onChange={(e) => setAugHsvS(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                HSV V (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augHsvV} onChange={(e) => setAugHsvV(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Perspective (0..0.01)
+                <input className="input" type="number" step="0.001" min={0} max={0.01} value={augPerspective} onChange={(e) => setAugPerspective(e.target.value)} disabled={!augEnabled} />
+              </label>
+
+              <label className="label">
+                Copy-paste (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augCopyPaste} onChange={(e) => setAugCopyPaste(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <label className="label">
+                Erasing (0..1)
+                <input className="input" type="number" step="0.05" min={0} max={1} value={augErasing} onChange={(e) => setAugErasing(e.target.value)} disabled={!augEnabled} />
+              </label>
+              <div />
+              <div />
+            </div>
+          </div>
         </div>
 
         {err ? <div className="alert danger">{err}</div> : null}
@@ -388,6 +526,14 @@ function Training() {
                 <Sparkline values={lossHistory} />
               </div>
             </div>
+            {current.params_json?.augmentation ? (
+              <div className="miniCard" style={{ marginTop: 10 }}>
+                <div className="muted">Augmentation params</div>
+                <pre className="mono" style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                  {JSON.stringify(current.params_json.augmentation, null, 2)}
+                </pre>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="muted">Chưa có run.</div>
@@ -407,6 +553,153 @@ function Training() {
               <span className="mono">{new Date(e.ts).toLocaleString()}</span>
               <span className="mono">{e.level}</span>
               <span>{e.message}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Models() {
+  const [data, setData] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState("")
+  const [autoActivate, setAutoActivate] = useState(true)
+
+  async function load() {
+    const resp = await apiFetch("/admin/models?limit=50")
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const d = await resp.json()
+    setData(d)
+    setAutoActivate(Boolean(d.auto_activate))
+  }
+
+  useEffect(() => {
+    load().catch((e) => setErr(String(e?.message || e)))
+  }, [])
+  useInterval(() => load().catch(() => {}), 3000)
+
+  async function saveSettings(next) {
+    setErr("")
+    setBusy(true)
+    try {
+      const resp = await apiFetch("/admin/models/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auto_activate: Boolean(next) }),
+      })
+      if (!resp.ok) throw new Error(await resp.text())
+      await load()
+    } catch (e) {
+      setErr(String(e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function activate(runId) {
+    setErr("")
+    setBusy(true)
+    try {
+      const resp = await apiFetch("/admin/models/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ run_id: runId }),
+      })
+      if (!resp.ok) throw new Error(await resp.text())
+      await load()
+    } catch (e) {
+      setErr(String(e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function rollback() {
+    setErr("")
+    setBusy(true)
+    try {
+      const resp = await apiFetch("/admin/models/rollback", { method: "POST" })
+      if (!resp.ok) throw new Error(await resp.text())
+      await load()
+    } catch (e) {
+      setErr(String(e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="grid2">
+      <div className="card" style={{ gridColumn: "1 / -1" }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Model versions</h3>
+            <div className="muted">Chọn model đang phục vụ cho `POST /api/predict` và rollback nếu cần.</div>
+          </div>
+          <button className="btn" onClick={() => load().catch(() => {})}>
+            Refresh
+          </button>
+        </div>
+
+        {err ? <div className="alert danger">{err}</div> : null}
+
+        <div className="miniCard" style={{ marginTop: 10 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div className="muted">Active model</div>
+              <div className="mono">{data?.active_path || "—"}</div>
+            </div>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <label className="row" style={{ gap: 8, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={autoActivate}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                    setAutoActivate(next)
+                    saveSettings(next)
+                  }}
+                  disabled={busy}
+                />
+                <span className="muted">Auto-activate sau train</span>
+              </label>
+              <button className="btn danger" onClick={rollback} disabled={busy || !(data?.history?.length > 0)}>
+                Rollback
+              </button>
+            </div>
+          </div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            History: {data?.history?.length ? data.history.slice(0, 3).join(" | ") : "—"}
+          </div>
+        </div>
+
+        <div className="table" style={{ marginTop: 12 }}>
+          <div className="tr th">
+            <div>Run</div>
+            <div>Created</div>
+            <div>Dataset</div>
+            <div>Val acc</div>
+            <div>Artifact</div>
+            <div>Size</div>
+            <div>Action</div>
+          </div>
+          {(data?.versions || []).map((v) => (
+            <div key={v.run_id} className="tr">
+              <div className="mono">{v.run_id.slice(0, 10)}</div>
+              <div className="mono">{v.created_at ? new Date(v.created_at).toLocaleString() : "—"}</div>
+              <div className="mono">{v.params_json?.dataset || "—"}</div>
+              <div className="mono">{v.metrics_json?.val_accuracy ?? "—"}</div>
+              <div className="mono" title={v.artifact_path || ""} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {v.artifact_path ? v.artifact_path.split("/").slice(-1)[0] : "—"}
+              </div>
+              <div className="mono">{bytes(v.artifact_size_bytes)}</div>
+              <div className="row" style={{ justifyContent: "flex-end" }}>
+                <button className="btn primary" disabled={busy || v.is_active || !v.artifact_exists} onClick={() => activate(v.run_id)}>
+                  {v.is_active ? "Active" : "Activate"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
