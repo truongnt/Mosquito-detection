@@ -1636,6 +1636,7 @@ docker compose --profile train up -d --build
 
 - Chỉnh trong `.env` các biến như `BACKEND_CPUS`, `BACKEND_MEM`, `WORKER_CPUS`, `WORKER_MEM`, `DB_MEM`...
 - Log container đã bật rotate qua `LOG_MAX_SIZE` / `LOG_MAX_FILE` để tránh đầy ổ đĩa.
+- Đặt `CONTAINER_PREFIX` để tất cả container có cùng prefix và tránh trùng tên với service khác trên VPS.
 
 ---
 

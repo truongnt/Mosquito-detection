@@ -4,6 +4,7 @@ name: mosquito-id
 services:
   db:
     image: postgres:16
+    container_name: ${CONTAINER_PREFIX:-mosquito}-db
     environment:
       POSTGRES_DB: mosquito
       POSTGRES_USER: mosquito
@@ -27,6 +28,7 @@ services:
 
   redis:
     image: redis:7
+    container_name: ${CONTAINER_PREFIX:-mosquito}-redis
     cpus: ${REDIS_CPUS:-0.25}
     mem_limit: ${REDIS_MEM:-256m}
     pids_limit: 256
@@ -44,6 +46,7 @@ services:
 
   backend:
     build: ./backend
+    container_name: ${CONTAINER_PREFIX:-mosquito}-backend
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
       REDIS_URL: redis://redis:6379/0
@@ -72,6 +75,7 @@ services:
 
   worker:
     build: ./backend
+    container_name: ${CONTAINER_PREFIX:-mosquito}-worker
     command: python -m app.worker
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
@@ -104,6 +108,7 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE: /api
+    container_name: ${CONTAINER_PREFIX:-mosquito}-frontend
     cpus: ${FRONTEND_CPUS:-0.5}
     mem_limit: ${FRONTEND_MEM:-256m}
     pids_limit: 256
@@ -118,6 +123,7 @@ services:
 
   nginx:
     image: nginx:1.27
+    container_name: ${CONTAINER_PREFIX:-mosquito}-nginx
     ports:
       - "80:80"
       - "443:443"
