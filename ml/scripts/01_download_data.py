@@ -8,6 +8,14 @@ def _run(cmd: list[str]) -> None:
     subprocess.check_call(cmd)
 
 
+def _has_images(root: Path) -> bool:
+    exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    for p in root.rglob("*"):
+        if p.is_file() and p.suffix.lower() in exts:
+            return True
+    return False
+
+
 def download_mosquitodl(raw_dir: Path) -> Path:
     raw_dir.mkdir(parents=True, exist_ok=True)
     dest = raw_dir / "mosquitodl"
@@ -36,7 +44,15 @@ def main() -> None:
 
     if args.mosquitodl:
         dest = download_mosquitodl(raw_dir)
-        print(f"✓ MosquitoDL ready: {dest}")
+        if _has_images(dest):
+            print(f"✓ MosquitoDL ready: {dest}")
+        else:
+            print(f"⚠ MosquitoDL cloned but no images were found under: {dest}")
+            print("  The upstream repo may not include the full dataset (or it requires extra download/LFS).")
+            print("  If you already have images, place them under:")
+            print("    data/raw/mosquitodl/<label>/*.jpg")
+            print("  Then run preprocess:")
+            print("    python ml/scripts/02_preprocess.py --raw-dir data/raw/mosquitodl --out-dir data/processed/mosquitodl")
 
 
 if __name__ == "__main__":

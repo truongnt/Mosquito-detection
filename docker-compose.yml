@@ -102,6 +102,7 @@ services:
     volumes:
       - ./ml:/app/ml
       - ./ml/models:/app/models
+      - ./scripts:/app/scripts:ro
       - ./data:/app/data
       - app_logs:/app/logs
     depends_on:
@@ -137,6 +138,7 @@ services:
     volumes:
       - ./ml:/app/ml
       - ./ml/models:/app/models
+      - ./scripts:/app/scripts:ro
       - ./data:/app/data
       - app_logs:/app/logs
     depends_on:

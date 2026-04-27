@@ -33,7 +33,13 @@ def preprocess_mosquitodl(
 
     files = _image_files(raw_root)
     if not files:
-        raise ValueError(f"No images found in {raw_root}")
+        hints = [
+            f"No images found in {raw_root}",
+            "Expected a folder structure like:",
+            "  data/raw/mosquitodl/<label>/*.jpg",
+            "If you cloned a dataset repo and it contains no images, you may need to download the dataset separately (or use Git LFS).",
+        ]
+        raise ValueError("\n".join(hints))
 
     by_label: dict[str, list[Path]] = {}
     for f in files:

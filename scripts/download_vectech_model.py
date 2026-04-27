@@ -61,7 +61,7 @@ def main() -> int:
     if len(pths) > 30:
         print(" ...")
 
-    print("\nNext: pick a weights_path from the list above and register it in Admin → Config under key 'models'.")
+    print("\nNext: pick a weights_path from the list above and register it in Admin → Cấu hình under key 'models'.")
     return 0
 
 

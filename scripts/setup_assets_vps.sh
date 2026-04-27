@@ -35,7 +35,7 @@ echo "==> Download VecTech weights (paper artifacts) into ml/models/external/vec
 run_py scripts/download_vectech_model.py --out ml/models/external/vectech --zip ml/models/external/vectech/CNN_model_files.zip
 
 echo "==> Generate Admin Config JSON for enabling VecTech model"
-run_py scripts/gen_vectech_models_config.py --weights-root ml/models/external/vectech > ml/models/external/vectech/models.config.json
+run_py scripts/gen_vectech_models_config.py --weights-root ml/models/external/vectech --out ml/models/external/vectech/models.config.json
 
 echo ""
 echo "Done."

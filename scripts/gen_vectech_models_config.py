@@ -66,6 +66,7 @@ def main() -> int:
     ap.add_argument("--model-id", default="vectech_xception")
     ap.add_argument("--name", default="VecTech Xception (paper)")
     ap.add_argument("--imsize", type=int, default=299)
+    ap.add_argument("--out", default="", help="Optional output file path (also prints JSON to stdout).")
     args = ap.parse_args()
 
     root = Path(args.weights_root).resolve()
@@ -90,7 +91,12 @@ def main() -> int:
         },
     }
 
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    s = json.dumps(payload, ensure_ascii=False, indent=2)
+    if args.out:
+        out = Path(args.out).resolve()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(s, encoding="utf-8")
+    print(s)
     return 0
 
 
