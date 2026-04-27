@@ -64,7 +64,7 @@ services:
       UPLOAD_DIR: /app/data/uploads
       LOG_DIR: /app/logs
     volumes:
-      - ./ml/models/saved:/app/models/saved:ro
+      - ./ml/models:/app/models:ro
       - ./data:/app/data
       - app_logs:/app/logs
     depends_on:
@@ -101,7 +101,7 @@ services:
       LOG_DIR: /app/logs
     volumes:
       - ./ml:/app/ml
-      - ./ml/models/saved:/app/models/saved
+      - ./ml/models:/app/models
       - ./data:/app/data
       - app_logs:/app/logs
     depends_on:
@@ -136,7 +136,7 @@ services:
       LOG_DIR: /app/logs
     volumes:
       - ./ml:/app/ml
-      - ./ml/models/saved:/app/models/saved
+      - ./ml/models:/app/models
       - ./data:/app/data
       - app_logs:/app/logs
     depends_on:
