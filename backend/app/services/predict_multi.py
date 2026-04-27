@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import logging
-import torch
-from PIL import Image
-from torchvision import transforms
 
 from ..services.model_registry import ModelSpec, get_model_spec
 from .model_service import get_model
@@ -12,6 +9,8 @@ log = logging.getLogger("predict.multi")
 
 
 def _yolo_predict_aggregate(paths: list[str]) -> tuple[str, float]:
+    import torch
+
     model = get_model()
     res = model.predict(source=paths, device="cpu", verbose=False)
     if not res:
@@ -56,6 +55,10 @@ def _vectech_xception_predict(paths: list[str], spec: ModelSpec) -> tuple[str, f
         import pretrainedmodels  # noqa: F401
     except Exception as exc:  # pragma: no cover
         raise RuntimeError("Missing dependency 'pretrainedmodels' for vectech_xception model") from exc
+
+    import torch
+    from PIL import Image
+    from torchvision import transforms
 
     cfg = spec.config or {}
     weights_path = cfg.get("weights_path")
