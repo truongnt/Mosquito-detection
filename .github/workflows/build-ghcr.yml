@@ -36,6 +36,7 @@ jobs:
           images: ghcr.io/truongnt/mosquito-detection-backend
           tags: |
             type=raw,value=main
+            type=raw,value=${{ github.sha }}
             type=sha,format=long
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -60,6 +61,7 @@ jobs:
           images: ghcr.io/truongnt/mosquito-detection-frontend
           tags: |
             type=raw,value=main
+            type=raw,value=${{ github.sha }}
             type=sha,format=long
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
