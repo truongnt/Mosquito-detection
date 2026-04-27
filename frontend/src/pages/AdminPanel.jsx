@@ -837,7 +837,13 @@ function Data() {
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Preprocess</h3>
-        <div className="muted">Tạo `data/processed/mosquitodl/{train,val,test}/(label)/` (copy file).</div>
+        <div className="muted">
+          Tạo{" "}
+          <span className="mono">
+            data/processed/mosquitodl/{`{train,val,test}`}/(label)/
+          </span>{" "}
+          (copy file).
+        </div>
         {status ? (
           <div className="miniCard" style={{ marginTop: 10 }}>
             <div className="muted">Datasets found</div>
