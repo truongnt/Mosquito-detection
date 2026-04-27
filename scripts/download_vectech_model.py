@@ -36,18 +36,32 @@ def main() -> int:
     ap.add_argument("--url", default=DEFAULT_ZIP_URL)
     ap.add_argument("--out", default="ml/models/external/vectech")
     ap.add_argument("--zip", default="ml/models/external/vectech/CNN_model_files.zip")
+    ap.add_argument(
+        "--use-existing-zip",
+        action="store_true",
+        help="Skip download if --zip already exists (useful when you upload the zip manually).",
+    )
+    ap.add_argument("--force-download", action="store_true", help="Always download even if --zip exists.")
     args = ap.parse_args()
 
     out_dir = Path(args.out).resolve()
     zip_path = Path(args.zip).resolve()
 
-    print(f"Downloading: {args.url}")
-    print(f"To: {zip_path}")
-    try:
-        download(args.url, zip_path)
-    except Exception as exc:
-        print(f"Download failed: {exc}", file=sys.stderr)
-        return 2
+    if zip_path.exists() and not args.force_download and args.use_existing_zip:
+        print(f"Using existing zip: {zip_path}")
+    else:
+        print(f"Downloading: {args.url}")
+        print(f"To: {zip_path}")
+        try:
+            download(args.url, zip_path)
+        except Exception as exc:
+            print(f"Download failed: {exc}", file=sys.stderr)
+            print("", file=sys.stderr)
+            print("Workaround:", file=sys.stderr)
+            print(f"1) Download the zip manually on your machine (browser/curl).", file=sys.stderr)
+            print(f"2) Upload it to the server at: {zip_path}", file=sys.stderr)
+            print("3) Re-run with: --use-existing-zip", file=sys.stderr)
+            return 2
 
     print(f"Extracting to: {out_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)

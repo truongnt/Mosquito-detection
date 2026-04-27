@@ -32,7 +32,7 @@ echo "==> Preprocess MosquitoDL into data/processed/mosquitodl"
 run_py ml/scripts/02_preprocess.py --raw-dir data/raw/mosquitodl --out-dir data/processed/mosquitodl
 
 echo "==> Download VecTech weights (paper artifacts) into ml/models/external/vectech"
-run_py scripts/download_vectech_model.py --out ml/models/external/vectech --zip ml/models/external/vectech/CNN_model_files.zip
+run_py scripts/download_vectech_model.py --out ml/models/external/vectech --zip ml/models/external/vectech/CNN_model_files.zip --use-existing-zip
 
 echo "==> Generate Admin Config JSON for enabling VecTech model"
 run_py scripts/gen_vectech_models_config.py --weights-root ml/models/external/vectech --out ml/models/external/vectech/models.config.json
