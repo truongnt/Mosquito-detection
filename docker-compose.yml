@@ -44,7 +44,10 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: mosquito-detect-backend:local
     container_name: ${CONTAINER_PREFIX:-mosquito}-backend
     environment:
       DATABASE_URL: postgresql+psycopg2://mosquito:${POSTGRES_PASSWORD}@db:5432/mosquito
@@ -70,8 +73,6 @@ services:
     cpus: ${BACKEND_CPUS:-1.0}
     mem_limit: ${BACKEND_MEM:-1024m}
     pids_limit: 512
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -82,7 +83,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    image: mosquito-detect-backend:local
     container_name: ${CONTAINER_PREFIX:-mosquito}-worker
     command: python -m app.worker
     environment:
@@ -109,8 +110,6 @@ services:
     cpus: ${WORKER_CPUS:-2.0}
     mem_limit: ${WORKER_MEM:-2048m}
     pids_limit: 1024
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -119,7 +118,7 @@ services:
     restart: unless-stopped
 
   trainer:
-    image: ghcr.io/truongnt/mosquito-detection-backend:main
+    image: mosquito-detect-backend:local
     container_name: ${CONTAINER_PREFIX:-mosquito}-trainer
     command: python -m app.worker
     environment:
@@ -146,8 +145,6 @@ services:
     cpus: ${TRAINER_CPUS:-2.0}
     mem_limit: ${TRAINER_MEM:-2048m}
     pids_limit: 1024
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -157,13 +154,16 @@ services:
     profiles: ["train"]
 
   frontend:
-    image: ghcr.io/truongnt/mosquito-detection-frontend:main
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: /api
+    image: mosquito-detect-frontend:local
     container_name: ${CONTAINER_PREFIX:-mosquito}-frontend
     cpus: ${FRONTEND_CPUS:-0.5}
     mem_limit: ${FRONTEND_MEM:-256m}
     pids_limit: 256
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: json-file
       options:
@@ -172,15 +172,6 @@ services:
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
-
-  watchtower:
-    image: containrrr/watchtower:1.7.1
-    container_name: ${CONTAINER_PREFIX:-mosquito}-watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval ${WATCHTOWER_INTERVAL:-30} --cleanup --label-enable
-    restart: unless-stopped
-    profiles: ["autodeploy"]
 
 volumes:
   db_data:
